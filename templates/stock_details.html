@@ -1,0 +1,64 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="card card-table">
+    <div class="card-body">
+        <div class="table-responsive">
+            <div class="container">
+                <!-- Dropdown Form for Filtering Stocks -->
+                <form action="" method="get">
+                    <label for="category">Select Company:</label>
+                    <select name="category" id="category" onchange="this.form.submit()">
+                        <option value="">Select company name</option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}" {% if selected_company == company.id %}selected{% endif %}>
+                            {{ company.company_name }}  <!-- Assuming company has a 'name' field -->
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <!-- Stocks Table -->
+                <table id="table_id" class="table table-hover table-center mb-0">
+                    <thead style="text-align: center;">
+                        <tr>
+                            <th>ID</th>
+                            <th>Product Name</th>
+                            <th>QTY</th>
+                            <th>Rate</th>
+                            <th>Discount (%)</th>
+                            <th>CGST (%)</th>
+                            <th>SGST (%)</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stock_display %}
+                        <tr style="text-align: center;">
+                            <td>{{ stock.id }}</td>
+                            <td>{{ stock.product_name }}</td>
+                            <td>{{ stock.qty }}</td>
+                            <td>{{ stock.rate }}</td>
+                            <td>{{ stock.discount }}</td>
+                            <td>{{ stock.cgst }}</td>
+                            <td>{{ stock.sgst }}</td>
+                            <td>{{ stock.total_amount }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center;">No stock available for this company.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <!-- Final Amount Row -->
+                    <tfoot>
+                        <tr>
+                            <td colspan="7" style="text-align: right;"><strong>Final Amount:</strong></td>
+                            <td><strong>{{ final_total }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

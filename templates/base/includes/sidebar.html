@@ -1,0 +1,48 @@
+<!-- Sidebar -->
+{% load active_link_tags %}
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-inner slimscroll">
+    <div id="sidebar-menu" class="sidebar-menu">
+      
+      <ul>
+        <li class="menu-title">
+          <span>Main Menu</span>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'index' %} "><i class="fas fa-holly-berry"></i><span>Index</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'book_slot' %} "><i class="fas fa-holly-berry"></i><span>Book Slot</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'calendar_view' %} "><i class="fas fa-holly-berry"></i><span>Calender View</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'show_booking' %} "><i class="fas fa-holly-berry"></i><span>Show Booking</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'cancel_booking' %} "><i class="fas fa-holly-berry"></i><span>Cancel Booking</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'company_information' %} "><i class="fas fa-holly-berry"></i><span>Company Information</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'stock' %} "><i class="fas fa-holly-berry"></i><span>Stock</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'stock_details' %} "><i class="fas fa-holly-berry"></i><span>Stock Details</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'income_category' %} "><i class="fas fa-holly-berry"></i><span>Add Income Category</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'income' %} "><i class="fas fa-holly-berry"></i><span>student_Income</span></a>
+        </li>
+        <li class="{% active_link 'active' %}">
+          <a href="{% url 'show_income' %} "><i class="fas fa-holly-berry"></i><span>Show Income</span></a>
+        </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>

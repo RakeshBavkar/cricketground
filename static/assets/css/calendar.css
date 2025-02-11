@@ -1,0 +1,81 @@
+.container {
+    position: relative;
+    width: 50%;
+    max-width: 600px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+ 
+.date {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #f4f4f4;
+    border-bottom: 1px solid #ddd;
+    color: #550b0b;
+}
+ 
+.days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    padding: 20px;
+    color: #550b0b;
+}
+ 
+.day, .number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    color:#550b0b;
+}
+ 
+.number {
+    color:#550b0b;
+    background: #f9f9f9;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+    margin-bottom: 25%;
+}
+ 
+
+ 
+.number-pre {
+    visibility: hidden;
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    padding: 10px;
+    background: #f4f4f4;
+    color: #550b0b;
+}
+ 
+.day {
+    text-align: center;
+    font-weight: 600;
+    color:#550b0b;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+   
+    
+}
+
+.arrow{
+    font-size : 50px;
+    color:#550b0b;
+}
+
+
+
+.number-pre {
+    visibility: hidden;
+}

@@ -1,0 +1,38 @@
+{% extends 'base/base.html' %}
+{% block content  %}
+<div class="card card-table">
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="" method="post">
+        {% csrf_token %}
+        <table id="table_id" class="table table-hover table-center mb-0 ">
+          <thead>
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">Gound Name</th>
+              <th scope="col">User</th>
+              <th scope="col">Start Booking_Date</th>
+              <th scope="col">End Booking_Date</th>
+              <th scope="col">Booking Status</th>
+              <th scope="col">Booking payment</th>              
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in booking %}
+            <tr>
+              <th scope="row">{{booking.id}}</th>
+              <td>{{booking.ground.name}}</td>
+              <td>{{booking.user.username}}</td>
+              <td>{{booking.start_booking_date}}</td>
+              <td>{{booking.end_booking_date}}</td>
+              <td>{{booking.is_booked}}</td> 
+              <td>{{booking.total_amount}}</td>              
+            </tr>
+            {% endfor %}        
+          </tbody>
+        </table>
+      </form>
+    </div>
+  </div>  
+</div>
+{% endblock %}

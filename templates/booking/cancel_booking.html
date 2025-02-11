@@ -1,0 +1,17 @@
+{% extends 'base/base.html' %}
+{% block content  %}
+<div class="card card-table">
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="" method="post">
+        {% csrf_token %}
+        <div>
+          <label>Enter Booking Id Below</label><br>
+          <input type="text" name="booking_id" class="mt-3 mb-3">
+        </div>
+        <button type="submit" class="btn btn-primary">Cancel Booking</button>
+      </form>
+    </div>
+  </div>  
+</div>
+{% endblock %}

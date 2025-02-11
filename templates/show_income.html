@@ -1,0 +1,89 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="container" style="border: 0.1rem solid rosybrown;">
+    <form method="get">
+        <h2>Income</h2>
+        <label for="category">Select Income Category:</label>
+        <select name="category" id="category" onchange="this.form.submit()">
+            <option value="">-- Select a Category --</option>
+            <option value="student_fees" {% if category == "student_fees" %}selected{% endif %}>Student Fees</option>
+            <option value="stadium_booking" {% if category == "stadium_booking" %}selected{% endif %}>Stadium Booking</option>
+            <option value="stock_income" {% if category == "stock_income" %}selected{% endif %}>Stock Income</option>
+        </select>
+    </form>
+</div>
+
+<div class="card card-table">
+    <div class="card-body">
+        <div class="table-responsive">
+            <form action="" method="post">
+                {% csrf_token %}
+                <table id="table_id" class="table table-hover table-center mb-0">
+                    <thead>
+                        <tr>
+                            {% if category == "stadium_booking" %}
+                                <th>Stadium</th>
+                                <th>Booked By</th>
+                                <th>Booking Start Date</th>
+                                <th>Booking End Date</th>
+                                <th>Booking Status</th>
+                                <th>Amount Paid</th>
+                            {% elif category == "student_fees" %}
+                                <th>Student Name</th>
+                                <th>Amount Paid</th>
+                                <th>Date Paid</th>
+                            {% elif category == "stock_income" %}
+                                <th>ID</th>
+                                <th>Ordered By</th>
+                                <th>Product Name</th>
+                                <th>QTY</th>
+                                <th>Rate</th>
+                                <th>Discount (%)</th>
+                                <th>CGST (%)</th>
+                                <th>SGST (%)</th>
+                                <th>Total</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in income_data %}
+                            <tr>
+                                {% if category == "stadium_booking" %}
+                                    <td>{{ item.ground }}</td>
+                                    <td>{{ item.user }}</td>
+                                    <td>{{ item.start_booking_date }}</td>
+                                    <td>{{ item.end_booking_date }}</td>
+                                    <td>{{ item.is_booked }}</td>
+                                    <td>{{ item.total_amount }}</td>
+                                {% elif category == "student_fees" %}
+                                    <td>{{ item.student_name }}</td>
+                                    <td>{{ item.fees_paid }}</td>
+                                    <td>{{ item.date }}</td>
+                                {% elif category == "stock_income" %}
+                                    <td>{{ item.id }}</td>
+                                    <td>{{ item.company_information }}</td>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>{{ item.qty }}</td>
+                                    <td>{{ item.rate }}</td>
+                                    <td>{{ item.discount }}</td>
+                                    <td>{{ item.cgst }}</td>
+                                    <td>{{ item.sgst }}</td>
+                                    <td>{{ item.total_amount }}</td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if income_data %}
+                    <h3>Total Income for {{ category|title }}: ₹{{ total_income }}</h3>
+                    <h2>Final Income from All Sources: ₹{{ final_income }}</h2>
+                {% else %}
+                    <p>No income data available.</p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

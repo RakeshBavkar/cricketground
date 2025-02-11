@@ -1,0 +1,101 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Cricket Ground Booking</h3>
+  <div class="row">
+    {% for ground in grounds %}
+    <div class="col-md-4">
+      <h5>{{ ground.name }}</h5>
+      <h5>Price per hour: ₹{{ ground.price_per_hour }}</h5>
+      <div id="calendar-{{ ground.id }}"></div>
+      <button class="btn btn-primary mt-3"
+        onclick="showBookingForm('{{ ground.id }}','{{ ground.price_per_hour }}')">Book Now</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Booking Modal -->
+  <div class="modal" id="bookingModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Book Slot</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="bookingForm">
+            <input type="hidden" id="groundId" name="ground_id">
+            <input type="hidden" id="groundPrice" name="ground_price"> <!-- Hidden price field -->
+
+            <label class="form-control mb-5">Start Booking Date</label>
+            <input type="datetime-local" id="startbookingDate" name="start_booking_date" class="form-control">
+            <label class="form-control mt-5">End Date</label>
+            <input type="datetime-local" id="endbookingDate" name="end_booking_date" class="form-control mt-5">
+
+            <p id="totalCost">Total Cost: ₹0</p>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="bookSlot()">Book</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  function showBookingForm(groundId, pricePerHour) {
+    $('#groundId').val(groundId);
+    $('#groundPrice').val(pricePerHour); // Store price in hidden input
+    $('#bookingModal').modal('show');
+  }
+
+  function bookSlot() {
+    const groundId = $('#groundId').val();
+    const startbookingDate = $('#startbookingDate').val();
+    const endbookingDate = $('#endbookingDate').val();
+
+    $.post("/book/", {
+      ground_id: groundId,
+      start_booking_date: startbookingDate,
+      end_booking_date: endbookingDate,
+      csrfmiddlewaretoken: '{{ csrf_token }}'
+    }, function (response) {
+      alert(response.message);
+      if (response.status === "success") {
+        $('#bookingModal').modal('hide');
+      }
+    });
+  }
+
+  // Calculate total cost dynamically
+  $(document).ready(function() {
+    $('#startbookingDate, #endbookingDate').on("change", function () {
+      const startDate = $('#startbookingDate').val();
+      const endDate = $('#endbookingDate').val();
+      const pricePerHour = parseFloat($('#groundPrice').val()); // Get price from hidden input
+
+      if (startDate && endDate && pricePerHour) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (start < end) {
+          const totalHours = (end - start) / (1000 * 60 * 60); // Convert milliseconds to hours
+          const totalCost = totalHours * pricePerHour;
+          $('#totalCost').text(`Total Cost: ₹${totalCost.toFixed(2)}`);
+        } else {
+          $('#totalCost').text("Invalid Date Selection");
+        }
+      } else {
+        $('#totalCost').text("Total Cost: ₹0"); // Reset if input is missing
+      }
+    });
+  });
+</script>
+
+{% endblock %}
