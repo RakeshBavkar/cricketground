@@ -21,4 +21,7 @@ urlpatterns = [
     path('stock/',views.stock,name='stock'),
     path('stock_details/',views.stock_details,name='stock_details'),
     path('company_information/',views.company_information,name='company_information'),
+    path('expense_category', views.expense_category, name='expense_category'),
+    path('expense', views.expense, name='expense'),
+    path('show_expense', views.show_expense, name='show_expense'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

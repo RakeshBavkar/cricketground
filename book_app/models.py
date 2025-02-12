@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils.timezone import now 
+from django.utils.timezone import now
 
 class Engineer(models.Model):
     admin = models.OneToOneField(User,on_delete=models.CASCADE)
@@ -48,7 +48,6 @@ class Income(models.Model):
 
 class Expence_category(models.Model):
     name =models.CharField(max_length=100)
-    description =models.CharField(max_length=100)
     created_at=models.DateTimeField()
     
     def __str__(self) -> str:
@@ -57,6 +56,15 @@ class Expence_category(models.Model):
 class Expence(models.Model):
     expence_category_name =models.ForeignKey(Expence_category,on_delete=models.CASCADE,blank=True,null=True)
     ex_amount = models.CharField(max_length=100)
+
+class Expense(models.Model):
+    expence_category_name =models.ForeignKey(Expence_category,on_delete=models.CASCADE,blank=True,null=True)
+    description =models.CharField(max_length=100, null=True,blank=True)
+    ex_amount = models.IntegerField()
+    created_at=models.DateTimeField(now)
+    
+    def __str__(self) -> str:
+        return f"{self.expence_category_name}"
 
 class Company_information(models.Model):
     company_name=models.CharField(max_length=200)
@@ -89,3 +97,6 @@ class Student(models.Model):
 
     def __str__(self):
         return self.student_name
+    
+class Expense_amount(models.Model):
+    expense_amount = models.IntegerField()

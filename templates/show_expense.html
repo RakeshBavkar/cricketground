@@ -1,0 +1,39 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="card card-table">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="table_id" class="table table-hover table-center mb-0">
+                <thead>
+                    <tr>
+                        <th>Expense Name</th>
+                        <th>Expense Description</th>
+                        <th>Amount Paid</th>
+                        <th>Payment Date and Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ex %}
+                        <tr>
+                            <td>{{ item.expence_category_name.name }}</td>
+                            <td>{{ item.description }}</td>
+                            <td>₹{{ item.ex_amount }}</td>
+                            <td>{{ item.created_at }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4">No expenses recorded.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if total_amount > 0 %}
+                <h3>Total Expense: ₹{{ total_amount }}</h3>
+            {% else %}
+                <p>No expense data available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ground, Booking,Engineer,Income_category,Income,Expence_category,Expence,Stock,Company_information,Student
+from .models import Ground, Booking,Engineer,Income_category,Income,Expence_category,Expence,Stock,Company_information,Student,Expense,Expense_amount
  
 admin.site.register(Ground)
 admin.site.register(Booking)
@@ -11,3 +11,5 @@ admin.site.register(Expence)
 admin.site.register(Stock)
 admin.site.register(Company_information)
 admin.site.register(Student)
+admin.site.register(Expense)
+admin.site.register(Expense_amount)

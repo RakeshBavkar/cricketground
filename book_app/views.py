@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import redirect, render, get_object_or_404
-from .models import Ground, Booking, User, Engineer,Income_category,Income,Stock,Company_information,Student
+from .models import Ground, Booking, User, Engineer,Income_category,Income,Stock,Company_information,Student,Expence_category,Expense,Expense_amount
 from django.http import HttpResponse, JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth.decorators import login_required
@@ -249,11 +249,13 @@ def show_income(request):
     student_income = sum(st.fees_paid for st in Student.objects.all())
     print(stadium_income)
     print(stock_income)
+    total_expense = Expense_amount.objects.all().last()
+    total_ex = total_expense.expense_amount
 
     # Calculate Student Fees income
 
     # Total of all incomes
-    final_income = stadium_income + stock_income+student_income
+    final_income = stadium_income + stock_income+student_income-total_ex
 
     if category == "stadium_booking":
         income_data = Booking.objects.all()
@@ -269,6 +271,7 @@ def show_income(request):
         'income_data': income_data,
         'total_income': total_income,
         'final_income': final_income,
+        'total_ex':total_ex
     }
 
     return render(request,'show_income.html',Context)
@@ -347,3 +350,56 @@ def stock_details(request):
     }
 
     return render(request, 'stock_details.html', context)    
+
+def expense_category(request):
+    if request.method == 'POST':
+        expense_name = request.POST.get("expense_name")
+        date = request.POST.get('date')
+
+        if Expence_category.objects.filter(name=expense_name).exists():
+            messages.warning(request,'Same Name Category already exists ..!')
+            return redirect('income_category')
+        else:
+            category =Expence_category(name=expense_name, created_at=date)
+            category.save()
+
+    return render(request, "expence_category.html")
+
+def expense(request):
+    ex = Expence_category.objects.all()
+    
+    if request.method == 'POST':
+        expense_name = request.POST.get('expense')
+        description = request.POST.get('expense_ds')
+        amount = request.POST.get('amount')
+        date = request.POST.get('date')
+        print(date)
+        exp = Expence_category.objects.filter(name=expense_name).first()
+    
+        data = Expense(expence_category_name = exp, ex_amount = amount, created_at = date, description = description)
+        data.save()
+        messages.success(request,'Expense added successfully ..!')
+    else:
+            messages.error(request,"Expense Category not found!")
+            
+       
+    
+    Context = {
+        'ex':ex
+        
+    }
+    return render(request, 'expense.html',Context)
+
+def show_expense(request):
+    Ex = Expense.objects.all()
+
+    # Convert ex_amount to float before summing
+    total_amount = sum(totals.ex_amount for totals in Ex)
+    ex_amount = Expense_amount(expense_amount= total_amount)
+    ex_amount.save()
+
+    context = {
+        'ex': Ex,  # Pass expenses list
+        'total_amount': total_amount  # Ensure consistency
+    }
+    return render(request, 'show_expense.html', context)

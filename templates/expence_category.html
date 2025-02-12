@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="card card-table">
+    <div class="card-body">
+      <div class="table-responsive">
+        <form action="" method="post">
+        {% csrf_token %}
+            <div class="form-group">
+                <div class="form-group mt-3">
+                <label>Enter Expense category name</label>
+                <input type="text" class="form-control" name="expense_name">
+            </div> 
+            </div>
+            <div class="form-group mt-3">
+                <label>Date and Time</label>
+                <input type="datetime-local" class="form-control" name="date">
+            </div>                                    
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+      </div>
+    </div>  
+</div>
+{% endblock content %}
