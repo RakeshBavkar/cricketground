@@ -68,7 +68,7 @@
     }, function (response) {
       alert(response.message);
       if (response.status === "success") {
-        $('#bookingModal').modal('hide');
+        window.location.href = response.redirect_url;
       }
     });
   }

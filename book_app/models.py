@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
+import uuid
 
 class Engineer(models.Model):
     admin = models.OneToOneField(User,on_delete=models.CASCADE)
@@ -100,3 +101,77 @@ class Student(models.Model):
     
 class Expense_amount(models.Model):
     expense_amount = models.IntegerField()
+
+
+class BackupBooking(models.Model):
+    ground = models.ForeignKey(Ground, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    start_booking_date = models.DateTimeField()
+    end_booking_date = models.DateTimeField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    backup_created_at = models.DateTimeField(auto_now_add=True)  # Time of backup
+    # Add any other necessary fields that you want to back up
+
+    def __str__(self):
+        return f"Backup of Booking for {self.ground.name} from {self.start_booking_date} to {self.end_booking_date}"
+    
+
+class Bookings(models.Model):
+    booking_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    team1_name = models.CharField(max_length=100)
+    team2_name = models.CharField(max_length=100, null=True, blank=True)
+    mobile_number_team1 = models.CharField(max_length=15)
+    mobile_number_team2 = models.CharField(max_length=15, null=True, blank=True)
+    email_team1 = models.EmailField()
+    email_team2 = models.EmailField(null=True, blank=True)
+    ground = models.ForeignKey(Ground, on_delete=models.CASCADE)
+    date = models.DateTimeField()
+    time_slot = models.CharField(max_length=20)
+    total_cost = models.IntegerField()
+    cost_per_team = models.IntegerField(null=True, blank=True)
+    payment_status_team1 = models.BooleanField(default=False)  # Team 1 Payment
+    payment_status_team2 = models.BooleanField(default=False)  # Team 2 Payment
+    status = models.CharField(max_length=20, default="Pending")  # Pending / Confirmed
+
+    def __str__(self):
+        return f"{self.team1_name} vs {self.team2_name if self.team2_name else 'Waiting'}"
+    
+
+class Payment(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    paid_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_time = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Payment for {self.booking.ground.name} by {self.user.username} on {self.payment_time}"
+
+    class Meta:
+        unique_together = ('booking', 'user')  # Ensures only one payment per user for each booking
+
+
+class TimeSlot(models.Model):
+    SLOT_CHOICES = [
+        ("7 - 9 AM", "7 - 9 AM"),
+        ("9 - 11 AM", "9 - 11 AM"),
+        ("11 - 2:30 PM", "11 - 2:30 PM"),
+        ("2:30 - 6 PM", "2:30 - 6 PM"),
+    ]
+    slot = models.CharField(max_length=20, choices=SLOT_CHOICES, unique=True)
+
+    def __str__(self):
+        return self.slot
+
+class SuperBooking(models.Model):
+    ground = models.ForeignKey(Ground, on_delete=models.CASCADE)
+    date = models.DateField()
+    time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    team_name = models.CharField(max_length=255, null=True, blank=True)  # Allow null values
+    email = models.EmailField(null=True, blank=True)  # Allow null values
+    contact_number = models.CharField(max_length=15, null=True, blank=True)  # Allow null values
+    is_paid = models.BooleanField(default=False)  # Track payment status
+    temp_lock_until = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.team_name or 'No Team'} - {self.ground.name} on {self.date} at {self.time_slot.slot}"

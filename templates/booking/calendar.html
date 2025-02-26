@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
-{% block content  %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,12 +12,14 @@
     <link rel="stylesheet" href="{% static 'css/calendar.css' %}">
     <style>
         .booked {
-            background-color: green !important;
+            background-color: red !important;
             color: white;
             font-weight: bold;
             border-radius: 5px;
             padding: 5px;
+            cursor: pointer;
         }
+
         .legend {
             display: flex;
             align-items: center;
@@ -24,104 +27,178 @@
             margin-top: 10px;
             font-weight: bold;
         }
+
         .legend-box {
             width: 20px;
             height: 20px;
             display: inline-block;
             border-radius: 3px;
         }
+
         .green-box {
-            background-color: green;
+            background-color: red;
         }
+
+        .available {
+            background-color: green !important;
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        
     </style>
 </head>
+
 <body>
-<div class="container-fluid mt-3">
-    <div class="date">
-        <button id="prevMonth" class="btn btn-secondary">&lt;</button>
-        <h3 class="text-center">Ground Booking Status</h3>
-        <button id="nextMonth" class="btn btn-secondary">&gt;</button>
+    <div class="container-fluid mt-3">
+        <div class="date">
+            <button id="prevMonth" class="btn btn-secondary">&lt;</button>
+            <h3 class="text-center">Ground Booking Status</h3>
+            <button id="nextMonth" class="btn btn-secondary">&gt;</button>
+        </div>
+
+        <div class="weekdays"></div>
+        <div class="days"></div>
+
+        <!-- 🔥 Booking Details Modal with Table -->
+        <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg"> <!-- Increased modal size -->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bookingModalLabel">Booking Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6 id="bookingDate"></h6>
+                        <table class="table table-bordered table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ground</th>
+                                    <th>Booked By</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingTableBody">
+                                <!-- Booking details will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span class="legend-box green-box"></span> <span>Booked Dates</span>
+        </div>
     </div>
 
-    <div class="weekdays"></div>
-    <div class="days"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const daysContainer = document.querySelector(".days");
+            const weekdaysContainer = document.querySelector(".weekdays");
+            const dateDisplay = document.querySelector(".text-center");
 
-    <!-- 🔥 Added Legend Below the Calendar -->
-    <div class="legend">
-        <span class="legend-box green-box"></span> <span>Booked Dates</span>
-    </div>
-</div>
+            let currentDate = new Date();
+            const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const daysContainer = document.querySelector(".days");
-        const weekdaysContainer = document.querySelector(".weekdays");
-        const dateDisplay = document.querySelector(".text-center");
+            // Parse JSON data from Django
+            const bookedDetails = JSON.parse('{{ booked_details_json|safe }}');
 
-        let currentDate = new Date();
-        const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-        // Parse JSON data from Django
-        const bookedDates = JSON.parse('{{ ground_records_json|safe }}');
-
-        function renderWeekdays() {
-            weekdaysContainer.innerHTML = "";
-            weekdays.forEach((day) => {
-                const weekday = document.createElement("div");
-                weekday.textContent = day;
-                weekday.classList.add("day");
-                weekdaysContainer.appendChild(weekday);
-            });
-        }
-
-        function renderCalendar() {
-            daysContainer.innerHTML = "";
-            const month = currentDate.getMonth();
-            const year = currentDate.getFullYear();
-
-            dateDisplay.textContent = `${currentDate.toLocaleString("default", { month: "long" })} ${year}`;
-
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDay = document.createElement("div");
-                emptyDay.classList.add("number-pre");
-                daysContainer.appendChild(emptyDay);
+            function renderWeekdays() {
+                weekdaysContainer.innerHTML = "";
+                weekdays.forEach((day) => {
+                    const weekday = document.createElement("div");
+                    weekday.textContent = day;
+                    weekday.classList.add("day");
+                    weekdaysContainer.appendChild(weekday);
+                });
             }
 
-            for (let i = 1; i <= daysInMonth; i++) {
-                const day = document.createElement("div");
-                day.textContent = i;
-                day.classList.add("number");
+            function renderCalendar() {
+                daysContainer.innerHTML = "";
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
 
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                
-                // Check if this date is in the booked list
-                if (bookedDates.includes(dateStr)) {
-                    day.classList.add("booked");
+                dateDisplay.textContent = `${currentDate.toLocaleString("default", { month: "long" })} ${year}`;
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyDay = document.createElement("div");
+                    emptyDay.classList.add("number-pre");
+                    daysContainer.appendChild(emptyDay);
                 }
 
-                daysContainer.appendChild(day);
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const day = document.createElement("div");
+                    day.textContent = i;
+                    day.classList.add("number");
+
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+                    // Check if this date has bookings
+                    if (bookedDetails.hasOwnProperty(dateStr)) {
+                        day.classList.add("booked");
+                        day.dataset.date = dateStr; // Store date in dataset for later use
+                        day.addEventListener("click", showBookingDetails);
+                    } else {
+                        day.classList.add("available");
+                    }
+
+                    daysContainer.appendChild(day);
+                }
             }
-        }
 
-        document.getElementById("prevMonth").addEventListener("click", () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
+            function showBookingDetails(event) {
+                const date = event.target.dataset.date;
+                const bookings = bookedDetails[date] || [];
+
+                const modalDate = document.getElementById("bookingDate");
+                modalDate.textContent = `Bookings for ${date}`;
+
+                const tableBody = document.getElementById("bookingTableBody");
+                tableBody.innerHTML = "";
+
+                if (bookings.length > 0) {
+                    bookings.forEach(booking => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td>${booking.ground}</td>
+                                     <td>${booking.user}</td>
+                                     <td>${booking.start_time}</td>
+                                     <td>${booking.end_time}</td> `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td colspan="5" class="text-center">No bookings available</td>`;
+                    tableBody.appendChild(row);
+                }
+
+                // Show Bootstrap modal
+                new bootstrap.Modal(document.getElementById("bookingModal")).show();
+            }
+
+            document.getElementById("prevMonth").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            document.getElementById("nextMonth").addEventListener("click", () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            renderWeekdays();
             renderCalendar();
         });
+    </script>
 
-        document.getElementById("nextMonth").addEventListener("click", () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
-
-        renderWeekdays();
-        renderCalendar();
-    });
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
 {% endblock %}

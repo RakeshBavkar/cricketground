@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Your Ground</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+    <link rel="stylesheet" href="{% static 'assets/plugins/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .booking-container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #e50914;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #b20710;
+        }
+        .slot-selection {
+            display: flex;
+            flex-direction: column;
+        }
+        .booked {
+            color: red;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        {% if error %}
+            <div class="alert alert-danger text-center">{{ error }}</div>
+        {% endif %}
+
+        {% for ground in grounds %}
+        <div class="booking-container">
+            <h3 class="text-center mb-4">Book {{ ground.name }}</h3>
+            <p class="text-center">Price: ₹{{ ground.price_per_hour }}/hr</p>
+            
+            <form method="POST">
+                {% csrf_token %}
+                
+                <input type="hidden" name="ground_id" value="{{ ground.id }}">
+                
+                <div class="mb-3 text-center">
+                    <label class="form-label">Select Date:</label>
+                    <input type="date" class="form-control date-picker" name="date"  value="{{ selected_date|default:'' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Select Timing Slot:</label>
+                    <div class="slot-selection">
+                        {% for slot in time_slots %}
+                        <div class="form-check">
+                            {% if slot in ground.booked_slots %}
+                            <input class="form-check-input" type="radio" name="time_slot" value="{{ slot }}" disabled>
+                            <label class="form-check-label booked" style="color: #e50914;">{{ slot }} (Booked)</label>
+                            {% elif slot in ground.locked_slots %}
+                            <input class="form-check-input" type="radio" name="time_slot" value="{{ slot }}" disabled>
+                            <label class="form-check-label booked" style="color: orange;">{{ slot }} (Not Available)</label>
+                            {% else %}
+                            <input class="form-check-input" type="radio" name="time_slot" value="{{ slot }}" required>
+                            <label class="form-check-label">{{ slot }}</label>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Proceed to Payment</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.querySelectorAll(".date-picker").forEach(function (picker) {
+            picker.addEventListener("change", function () {
+                let groundId = this.dataset.groundId;
+                window.location.href = "?date=" + this.value + "&ground_id=" + groundId;
+            });
+        });
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            let today = new Date().toISOString().split("T")[0];
+            document.querySelectorAll(".date-picker").forEach(function (picker) {
+                picker.setAttribute("min", today);
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let today = new Date();
+            let maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 90); // Add 90 days
+    
+            let formattedToday = today.toISOString().split("T")[0];
+            let formattedMaxDate = maxDate.toISOString().split("T")[0];
+    
+            document.querySelectorAll(".date-picker").forEach(function (picker) {
+                picker.setAttribute("min", formattedToday);   // Minimum date = today
+                picker.setAttribute("max", formattedMaxDate); // Maximum date = today + 90 days
+            });
+        });
+    </script>
+</body>
+</html>

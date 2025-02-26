@@ -5,7 +5,7 @@
    <a href="javascript:void(0);" id="toggle_btn">
    <i class="fas fa-align-left"></i></a>
    <div class="top-nav-search mt-3">
-      <h4><strong>Welcome</strong>&nbsp;<span>{{user.first_name}}&nbsp;{{user.last_name}}</span>&nbsp;!</h4>
+      <h4><strong>Welcome</strong>&nbsp;<span>{{user.username}}</span>&nbsp;!</h4>
    </div>
    <a class="mobile_btn" id="mobile_btn">
    <i class="fas fa-bars"></i></a>
@@ -20,7 +20,7 @@
          <div class="dropdown-menu">
             <div class="user-header">
                <div class="user-text">
-                  <h6>{{user.first_name}}&nbsp;{{user.last_name}}</h6>
+                  <h6>{{user.username}}</h6>
                </div>
             </div>
             <a class="dropdown-item" href="{% url 'do_logout' %}">Logout</a>

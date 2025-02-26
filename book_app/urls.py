@@ -4,7 +4,11 @@ from django.conf import settings
 from django.conf.urls.static import static
  
 urlpatterns = [
-    path('', views.LOGIN, name='login'),
+    path('', views.home, name='home'),
+    path('login/', views.LOGIN, name='login'),
+    path('payment/', views.payment, name='payment'),
+    path('paymentss/', views.paymentss, name='paymentss'),
+    path('payment/payment_exists', views.payment_exists, name='payment_exists'),
     path('index/',views.index,name='index'),
     path('doLogin', views.doLogin, name='doLogin'),
     path('calendar_view/ ', views.calendar_view, name='calendar_view'),
@@ -24,4 +28,9 @@ urlpatterns = [
     path('expense_category', views.expense_category, name='expense_category'),
     path('expense', views.expense, name='expense'),
     path('show_expense', views.show_expense, name='show_expense'),
+    path('booking_list', views.booking_list, name='booking_list'),
+    path('booking_success', views.booking_success, name='booking_success'),
+    path('payment_status', views.payment_status, name='payment_status'),
+    path('payment_page/', views.payment_page, name='payment_page'),
+    path('generate_qr/', views.generate_qr, name='generate_qr'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

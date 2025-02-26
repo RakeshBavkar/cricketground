@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import redirect, render, get_object_or_404
-from .models import Ground, Booking, User, Engineer,Income_category,Income,Stock,Company_information,Student,Expence_category,Expense,Expense_amount
+from .models import Ground, Booking, User, Engineer,Income_category,Income,Stock,Company_information,Student,Expence_category,Expense,Expense_amount,BackupBooking,Bookings,Payment,TimeSlot,SuperBooking
 from django.http import HttpResponse, JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,14 @@ from django.contrib import messages
 from book_app.EmailBackEnd import EmailBackEnd
 from django.core.mail import send_mail
 from booking_project.settings import EMAIL_HOST_USER
-
+from django.db import IntegrityError
+from django.urls import reverse
+from django.db.models import Count
+import io
+import qrcode
+import base64
+from django.utils import timezone
+from datetime import timedelta
 def base(request):
     return render(request, 'base/base.html')
 
@@ -109,63 +116,99 @@ def book_slot(request):
             is_booked=True
         ).exists()
 
-        if existing_booking:
-            return JsonResponse({'status': 'error', 'message': 'Slot already booked.'})    
+        if  existing_booking:
+            return JsonResponse({'status': 'error', 'message': 'Slot already booked.'})   
+        else: 
 
-        # Calculate duration in hours
-        duration_in_hours = (end_booking_date - start_booking_date).total_seconds() / 3600  
-        total_cost = duration_in_hours * ground.price_per_hour        
+            # Calculate duration in hours
+            duration_in_hours = (end_booking_date - start_booking_date).total_seconds() / 3600  
+            total_cost = duration_in_hours * ground.price_per_hour        
 
-        # Create and save booking
-        booking = Booking.objects.create(
-            ground=ground,
-            user=request.user,
-            start_booking_date=start_booking_date,
-            end_booking_date=end_booking_date,
-            is_booked=True,
-            total_amount=total_cost  # Store total amount in the database
-        )
+            # Create and save booking
+            booking = Booking.objects.create(
+                ground=ground,
+                user=request.user,
+                start_booking_date=start_booking_date,
+                end_booking_date=end_booking_date,
+                is_booked=True,
+                total_amount=total_cost  # Store total amount in the database
+            )
+            redirect_url = reverse('booking_success')  # Dynamically generate the correct URL
+            print(f"✅ Redirecting to: {redirect_url}")  # Debugging
 
-        return JsonResponse({'status': 'success', 'message': 'Booking successful.', 'total_amount': total_cost})
-
-    return render(request, 'booking/book_slot.html', {
-        'grounds': grounds,
-        'booked_slots': booked_slots,
-    })
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Booking successful.',
+                'redirect_url': redirect_url
+            })
+    else:
+        return render(request, 'booking/book_slot.html', {
+            'grounds': grounds,
+            'booked_slots': booked_slots,
+        })
 
 #Slot booking
 @login_required
 def calendar_view(request):
     ground_records = Booking.objects.filter(is_booked=True).order_by('start_booking_date')
 
-    # Generate all booked dates between start and end for each booking
-    booked_dates = set()
+    # Dictionary to store all bookings grouped by date
+    booked_details = {}
+
     for record in ground_records:
         start_date = record.start_booking_date.date()
         end_date = record.end_booking_date.date()
+        
         while start_date <= end_date:
-            booked_dates.add(start_date.strftime('%Y-%m-%d'))
-            start_date += timedelta(days=1)  # Move to the next day
+            date_str = start_date.strftime('%Y-%m-%d')
+            
+            if date_str not in booked_details:
+                booked_details[date_str] = []
+            
+            booked_details[date_str].append({
+                'ground': record.ground.name,
+                'user': record.user.username,
+                'start_time': record.start_booking_date.strftime('%H:%M'),
+                'end_time': record.end_booking_date.strftime('%H:%M'),
+                'total_amount': str(record.total_amount) if record.total_amount else "N/A"
+            })
+            
+            start_date += timedelta(days=1)
 
     context = {
-        'ground_records_json': json.dumps(list(booked_dates)),  # Convert to JSON list for frontend
+        'booked_details_json': json.dumps(booked_details),  # Convert to JSON for frontend
     }
 
     return render(request, 'booking/calendar.html', context)
 
+
 #Cancel Booking
 @login_required
-def cancel_booking(request):    
-    if request.method == "POST":
-        booking_id = request.POST.get('booking_id')
-        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-        # Cancel the booking
-        # booking.is_booked = False
-        # booking.save()
+def cancel_booking(request, booking_id):
+    # Fetch the booking object by its ID
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # If the request is POST, proceed with cancellation (deletion)
+    if request.method == 'POST':
+        # Optionally, back up the booking data before deletion (soft backup)
+        BackupBooking.objects.create(
+            ground=booking.ground,
+            user=booking.user,
+            start_booking_date=booking.start_booking_date,
+            end_booking_date=booking.end_booking_date,
+            total_amount=booking.total_amount,
+        )
+
+        # Delete the booking (hard delete)
         booking.delete()
-        # return JsonResponse({'status': 'success', 'message': 'Booking cancelled.'})
-        return redirect('cancel_booking')    
-    return render(request,'booking/cancel_booking.html')
+
+        # After cancellation, redirect to booking list or any other page
+        # return redirect('booking_list')  # Replace with actual URL name for booking list or success page
+    context ={
+        'booking':booking
+    }
+    # If the request is GET, render the confirmation page
+    return render(request, 'booking/cancel_booking.html')
 
 #Ground booking information
 def show_booking(request):
@@ -403,3 +446,278 @@ def show_expense(request):
         'total_amount': total_amount  # Ensure consistency
     }
     return render(request, 'show_expense.html', context)
+
+def booking_list(request):
+    # Fetch all bookings for the current user
+    bookings = Payment.objects.all()
+    context ={
+        'bookings':bookings
+    }
+    return render(request, 'booking/booking_list.html',context)
+
+
+    
+
+# Payment View
+def home(request):
+    grounds = Ground.objects.all()
+    time_slots = TimeSlot.objects.values_list("slot", flat=True)  # Fetch all slots
+    selected_date = request.GET.get("date")  # Get selected date from URL
+
+    if request.method == "POST":
+        ground_id = request.POST.get("ground_id")
+        date = request.POST.get("date")
+        time_slot_str = request.POST.get("time_slot")
+
+        ground = Ground.objects.get(id=ground_id)
+        time_slot = TimeSlot.objects.filter(slot=time_slot_str).first()
+
+        if not time_slot:
+            return render(request, "home.html", {
+                "grounds": grounds,
+                "time_slots": time_slots,
+                "error": "Invalid time slot selected!",
+            })
+
+        # Check if slot is already booked
+        if SuperBooking.objects.filter(ground=ground, date=date, time_slot=time_slot, is_paid=True).exists():
+            return render(request, "home.html", {
+                "grounds": grounds,
+                "time_slots": time_slots,
+                "error": "This slot is already booked!",
+                "selected_date": selected_date,
+            })
+
+        # Check if slot is temporarily locked
+        existing_lock = SuperBooking.objects.filter(
+            ground=ground,
+            date=date,
+            time_slot=time_slot,
+            temp_lock_until__gt=timezone.now()  # Check if lock is still valid
+        ).first()
+
+        if existing_lock:
+            return render(request, "home.html", {
+                "grounds": grounds,
+                "time_slots": time_slots,
+                "error": "This slot is temporarily locked. Try again later.",
+                "selected_date": selected_date,
+            })
+
+        # Calculate total cost based on slot duration
+        slot_duration = 2 if "AM" in time_slot.slot else 3.5
+        total_cost = ground.price_per_hour * slot_duration
+
+        # Save booking in session
+        request.session["booking_data"] = {
+            "ground_id": ground.id,
+            "date": date,
+            "time_slot": time_slot_str,
+            "total_cost": total_cost,
+            "ground": ground.name
+        }
+
+        return redirect("payment_page")
+
+    # Fetch booked + locked slots for each ground (only for selected date)
+    for ground in grounds:
+        booked_slots = SuperBooking.objects.filter(ground=ground, is_paid=True)
+
+        locked_slots = SuperBooking.objects.filter(
+            ground=ground,
+            temp_lock_until__gt=timezone.now()  # Slots locked but not paid
+        )
+
+        if selected_date:
+            booked_slots = booked_slots.filter(date=selected_date)
+            locked_slots = locked_slots.filter(date=selected_date)
+
+        # Combine booked and locked slots
+        ground.booked_slots = list(booked_slots.values_list("time_slot__slot", flat=True))
+        ground.locked_slots = list(locked_slots.values_list("time_slot__slot", flat=True))
+
+    return render(request, "home.html", {
+        "grounds": grounds,
+        "time_slots": time_slots,
+        "selected_date": selected_date,  # Pass selected date to template
+    })
+
+@login_required
+def payment(request):
+    bookings = Booking.objects.order_by('-id')[:10]
+    all_book = Booking.objects.filter(id__in=Payment.objects.values('booking').annotate(payment_count=Count('id')).filter(payment_count__lt=2).values('booking'))
+
+
+   
+    total_amount = None
+    team_payment = None
+    selected_booking = None
+
+    if request.method == "POST":
+        booking_id = request.POST.get('booking_id')
+        booking = Booking.objects.get(id=booking_id)
+        selected_booking = booking
+
+        # Check if payment already exists for this booking
+        payment_exists = Payment.objects.filter(booking=booking, user=request.user).exists()
+        payments = Payment.objects.filter(booking=booking)
+
+        if payments.count() >= 2:
+            return render(request, 'paymentss.html')
+
+        if payment_exists:
+            return render(request, 'payment_page.html')
+
+        # Calculate the total amount and divide it for two teams (each pays half)
+        total_amount = booking.total_amount
+        amount_to_pay = total_amount / 2
+        team_payment = amount_to_pay
+
+        # If it's Team A making the first payment
+        if booking.user == request.user:
+            paid_payment = amount_to_pay
+            payment = Payment.objects.create(
+                booking=booking,
+                user=request.user,
+                paid_payment=paid_payment
+            )
+            message = f"Payment successful. You have paid ₹{paid_payment:.2f}."
+
+        else:
+            # Team B making the remaining payment
+            remaining_payment = total_amount - amount_to_pay
+            payment = Payment.objects.create(
+                booking=booking,
+                user=request.user,
+                paid_payment=remaining_payment
+            )
+            message = f"Payment successful. You have paid ₹{remaining_payment:.2f}."
+
+        return render(request, 'Make_Payment.html', {'message': message, 'payment': payment})
+
+    return render(request, 'Make_Payment.html', {
+        'bookings': bookings,
+        'total_amount': total_amount,
+        'team_payment': team_payment,
+        'selected_booking': selected_booking,
+        'all_book':all_book
+    })
+
+def payment_exists(request):
+    return render(request, 'payment_page.html')
+
+def paymentss(request):
+    return render(request, 'paymentss.html')
+
+def booking_success(request):
+    return render(request, 'booking/booking_success.html')
+
+def payment_status(request):
+    bookings = Payment.objects.filter(user=request.user)
+    context ={
+        'bookings':bookings
+    }
+    return render(request, 'payment_status.html',context)
+
+def payment_page(request):
+    booking_data = request.session.get("booking_data", {})
+
+    if not booking_data:
+        return redirect("home")  # Redirect to home if session data is missing
+
+    try:
+        ground = Ground.objects.get(id=booking_data["ground_id"])
+    except Ground.DoesNotExist:
+        return redirect("home")  # Redirect if ground doesn't exist
+
+    if request.method == "POST":
+        team_name = request.POST.get("team_name")
+        email = request.POST.get("email")
+        contact_number = request.POST.get("contact_number")
+
+        # Store user details in session before proceeding to payment
+        request.session["booking_data"].update({
+            "team_name": team_name,
+            "email": email,
+            "contact_number": contact_number
+        })
+        request.session.modified = True  # Ensure session updates are saved
+
+        return redirect("generate_qr")  # Redirect to QR code generation
+
+    return render(request, "payments.html", {"ground": booking_data["ground_id"],
+        "date": booking_data["date"],
+        "time_slot": booking_data["time_slot"],
+        "total_cost": booking_data["total_cost"],
+        "ground": {
+        "id": ground.id,
+        "name": ground.name,  # Replace with actual field names in your model
+        "location": ground.location
+    }})
+
+
+
+def generate_qr(request):
+    booking_data = request.session.get("booking_data", {})
+
+    if not booking_data or not all(key in booking_data for key in ["team_name", "email", "contact_number"]):
+        return redirect("payment_page")  # Ensure user has filled the form
+    
+    ground = Ground.objects.get(id=booking_data["ground_id"])
+    time_slot = TimeSlot.objects.get(slot=booking_data["time_slot"])
+
+    # Check for existing locked or booked slots
+    existing_booking = SuperBooking.objects.filter(
+        ground=ground,
+        date=booking_data["date"],
+        time_slot=time_slot
+    ).first()
+
+    if existing_booking:
+        if existing_booking.is_paid:
+            return redirect("home")  # Redirect if already booked
+        if existing_booking.temp_lock_until and existing_booking.temp_lock_until > timezone.now():
+            temp_lock_until = existing_booking.temp_lock_until  # Use existing lock time
+        else:
+            temp_lock_until = timezone.now() + timedelta(minutes=1)  # Reset lock
+            existing_booking.temp_lock_until = temp_lock_until
+            existing_booking.save()
+    else:
+        temp_lock_until = timezone.now() + timedelta(minutes=1)  # New lock
+        SuperBooking.objects.create(
+            ground=ground,
+            date=booking_data["date"],
+            time_slot=time_slot,
+            total_cost=booking_data["total_cost"],
+            team_name=booking_data["team_name"],
+            email=booking_data["email"],
+            contact_number=booking_data["contact_number"],
+            temp_lock_until=temp_lock_until
+        )
+
+    # UPI Payment Details
+    upi_id = "yourname@upi"  # Replace with your actual UPI ID
+    upi_link = f"upi://pay?pa={upi_id}&pn=Ground Booking&mc=&tid=&tr=&tn=Ground Booking&am={booking_data['total_cost']}&cu=INR"
+
+    # Generate QR code with UPI Payment Link
+    qr = qrcode.make(upi_link)
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    if request.method == "POST":  # Simulating payment success
+        existing_booking.is_paid = True
+        existing_booking.temp_lock_until = None
+        existing_booking.save()
+
+        # Clear session data after booking is confirmed
+        request.session.pop("booking_data", None)
+
+        return redirect("home")  # Redirect to home after successful booking
+
+    return render(request, "generate_qr.html", {
+        "qr_code": qr_base64,
+        "booking_data": booking_data,
+        "ground": ground,
+        "lock_expiry": temp_lock_until.strftime("%Y-%m-%d %H:%M:%S")  # Send lock expiry time
+    })

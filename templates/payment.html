@@ -1,0 +1,19 @@
+<h2>Payment for {{ booking.team1_name }} vs {{ booking.team2_name|default:"Waiting" }}</h2>
+
+{% if not booking.payment_status_team1 %}
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit" name="pay_team1" class="btn btn-success">Pay for Team 1</button>
+</form>
+{% else %}
+<p>✅ Team 1 Payment Done</p>
+{% endif %}
+
+{% if not booking.payment_status_team2 %}
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit" name="pay_team2" class="btn btn-success">Pay for Team 2</button>
+</form>
+{% else %}
+<p>✅ Team 2 Payment Done</p>
+{% endif %}

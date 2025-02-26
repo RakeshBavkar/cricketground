@@ -1,0 +1,18 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="card">
+            <div class="card-header">
+                <h5>Payment is already done!!!</h5>
+            </div>
+            <div class="card-body">
+                <h6>Payment for this ground is already done!!!</h6>
+            </div>
+            <div class="card-fotter">
+                <a href="{% url 'payment'%}"class='btn btn-success'>Go back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
